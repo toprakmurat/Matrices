@@ -1,4 +1,3 @@
-
 # Create row_size x column_size matrix with initial values of 0
 def create_matrix(row_size, column_size):
     matrix = [[0 for _ in range(column_size)] for _ in range(row_size)]
@@ -6,7 +5,11 @@ def create_matrix(row_size, column_size):
 
 
 # Check if matrix consists of non integer or non float values
-def check_matrix(matrix):
+def check_matrix(matrix, is_square=False):
+    if is_square:
+        if len(matrix) == 0 or len(matrix) != len(matrix[0]):
+            return False
+
     for index, row in enumerate(matrix):
         for val in row:
             if type(val) != int and type(val) != float:
@@ -14,7 +17,7 @@ def check_matrix(matrix):
         # Check if all rows have same length
         if index == 0:
             continue
-        if len(row) != len(matrix[index-1]):
+        if len(row) != len(matrix[index - 1]):
             return False
 
     return True
@@ -37,6 +40,14 @@ def change_rows_matrix(matrix, index_first, index_second):
     matrix[index_first] = matrix[index_second]
     matrix[index_second] = temp
 
+    return matrix
+
+
+# Convert all the values in a matrix to floats
+def convert_float(matrix):
+    for i, row in enumerate(matrix):
+        for j, val in enumerate(row):
+            matrix[i][j] = float(val)
     return matrix
 
 
@@ -106,6 +117,7 @@ def two_matrix_multiplication(first_matrix, second_matrix):
 
     return result
 
+
 # Old version
 # Multiply 2 matrices (helper function for Matrix.multiply)
 # def two_matrix_multiplication(first_matrix, second_matrix):
@@ -122,16 +134,6 @@ def two_matrix_multiplication(first_matrix, second_matrix):
 #             values[row_index][i] = total
 #
 #     return values
-
-
-# Fix a particular temporary fail in a square matrix
-def fix_temp_fail(matrix, fail_index):
-    col_as_row = matrix_col_to_row(matrix, fail_index)
-    for val_index, val in enumerate(col_as_row[fail_index:]):
-        if val != 0:
-            matrix = change_rows_matrix(matrix, fail_index, fail_index + val_index)
-            break
-    return matrix
 
 
 class Matrix:
@@ -181,30 +183,42 @@ class Matrix:
 
         return diagonal_matrix
 
+    # Apply Gaussian elimination for square matrices
+    @staticmethod
+    def gaussian_elimination(matrix):
+        if check_matrix(matrix, is_square=True) is False:
+            raise Exception('Invalid Matrix')
 
-# Apply gaussian elimination to a square matrix
-def gaussian_elimination(matrix):
-    # Row operation is not needed for the last row (matrix[:-1])
-    for index, row in enumerate(matrix[:-1]):
-        pivot = row[index]
+        for row_index, row in enumerate(matrix):
+            if row_index == len(matrix) - 1:
+                # elementary operations for the last row is not needed
+                return matrix
 
-        # Fix temporary fails
-        if pivot == 0:
-            pass
+            pivot = row[row_index]
 
-        # find the α(alpha) multiplier for other rows below
-        for index_below, row_below in enumerate(matrix[index + 1:]):
-            curr_ind = index + index_below + 1  # + 1 because we start with matrix[index + 1]
-            alpha = -1 * (row_below[0] / pivot)
-            if alpha != 0:  # if alpha == 0 then matrix stays the same
-                # multiply each value in row with alpha and sum with row_below[same_index]
-                matrix[curr_ind] = [val*alpha + row_below[val_index] for val_index, val in enumerate(row)]
+            # Fix temporary fails (change rows if pivot equals to 0)
+            if pivot == 0:
+                col_as_row = matrix_col_to_row(matrix, row_index)
+                for ind, val in enumerate(col_as_row[row_index:]):
+                    if val != 0:
+                        change_index = ind + row_index
+                        change_rows_matrix(matrix, change_index, row_index)
+                        break
+                continue
 
-    return matrix
+            for index_below, row_below in enumerate(matrix[row_index + 1:]):
+                current_ind = row_index + index_below + 1
+                alpha = -1 * row_below[row_index] / pivot
+                # If alpha equals to 0, then no operation is needed. Just pass that row.
+                if alpha == 0:
+                    continue
+                matrix[current_ind] = [val * alpha + row_below[val_index]
+                                       for val_index, val in enumerate(row)]
 
 
 # TODO: GAUSS-JORDAN METHOD
 
-a = [[1, 2, -1],[-2, -3, 4],[3, 5, -4]]
-
-print(gaussian_elimination(a))
+a = [[1, 1, 2],
+     [-1, -1, 1],
+     [3, 1, 1]]
+print(Matrix.gaussian_elimination(a))
